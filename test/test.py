@@ -1,21 +1,51 @@
-import numpy as np
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+import pandas as pd
 from stock_env import StockTradingEnv
 
-# Fake stock data: 100 days of prices between 200 and 300
-fake_data = np.cumsum(np.random.randn(100)) + 250
-fake_data = np.abs(fake_data)
 
-env = StockTradingEnv(stock_data=fake_data, render_mode="human")
-obs, info = env.reset(seed=42)
+def load_stock_data(filepath: str):
+    df = pd.read_csv(filepath, header=[0, 1], index_col=0, parse_dates=True)
+    return df["Close"]["AAPL"].dropna().to_numpy()
 
-print("Initial observation:", obs)
-print("Initial info:", info)
-print("-" * 100)
 
-for _ in range(20):
-    action = env.action_space.sample()  # random action
-    obs, reward, terminated, truncated, info = env.step(action)
+def main():
+    stock_data = load_stock_data(os.path.join(os.path.dirname(__file__), "..", "data", "AAPL.csv"))
+    print(f"Loaded {len(stock_data)} days of AAPL data")
+    print(f"Price range: ${stock_data.min():.2f} - ${stock_data.max():.2f}")
+    print()
 
-    if terminated or truncated:
-        print("Episode finished.")
-        break
+    env = StockTradingEnv(stock_data=stock_data, render_mode="human")
+    obs, info = env.reset(seed=42)
+
+    action_names = ["Sell all", "Sell half", "Hold", "Buy half", "Buy all"]
+
+    print(f"Observation shape: {obs.shape}")
+    print(f"Initial observation: {obs}")
+    print(f"Initial info: {info}")
+    print("-" * 110)
+
+    total_reward = 0.0
+
+    for step in range(30):
+        action = env.action_space.sample()
+        obs, reward, terminated, truncated, info = env.step(action)
+        total_reward += reward
+
+        print(f"  Action: {action_names[action]:<15} | Reward: {reward:>+12.2f}")
+        print()
+
+        if terminated or truncated:
+            print("Episode finished.")
+            break
+
+    print("-" * 110)
+    print(f"Total reward over {step + 1} steps: {total_reward:>+.2f}")
+    print(f"Final profit: {info['profit']:>+.2f}")
+
+
+if __name__ == "__main__":
+    main()
