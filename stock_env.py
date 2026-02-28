@@ -14,6 +14,9 @@ class StockTradingEnv(gym.Env):
         stock_data: np.ndarray,
         initial_capital: float = 1_000_000.0,
         window_size: int = 6,
+        transaction_fee_rate: float = 0.001,
+        hold_penalty: float = 0.001,
+        loss_threshold: float = 0.9,
         render_mode: Optional[str] = None,
     ):
         super().__init__()
@@ -21,6 +24,9 @@ class StockTradingEnv(gym.Env):
         self.stock_data = stock_data
         self.initial_capital = initial_capital
         self.window_size = window_size
+        self.transaction_fee_rate = transaction_fee_rate
+        self.hold_penalty = hold_penalty
+        self.loss_threshold = loss_threshold
         self.render_mode = render_mode
 
         self.action_space = spaces.Discrete(5)
@@ -52,7 +58,10 @@ class StockTradingEnv(gym.Env):
     def step(self, action: int):
         current_price = self.stock_data[self.current_step]
 
-        self._execute_action(action, current_price)
+        trade_value = self._execute_action(action, current_price)
+        transaction_cost = trade_value * self.transaction_fee_rate
+
+        self.capital = max(0.0, self.capital - transaction_cost)
 
         self.current_step += 1
         new_price = self.stock_data[self.current_step]
@@ -60,25 +69,39 @@ class StockTradingEnv(gym.Env):
         invested_value = self.num_shares * new_price
         total_value = self.capital + invested_value
 
-        reward = total_value - self.previous_total_value
-        self.previous_total_value = total_value
+    
+        reward = (total_value - self.previous_total_value) / self.initial_capital
+
+    
+        if action == 2 and self.num_shares == 0.0:
+            reward -= self.hold_penalty
 
         terminated = self.current_step >= len(self.stock_data) - 1
+
+        
+        if terminated and total_value < self.loss_threshold * self.initial_capital:
+            reward -= (1.0 - total_value / self.initial_capital)
+
         truncated = False
+        self.previous_total_value = total_value
 
         if self.render_mode == "human":
             self.render()
 
         return self._get_obs(), reward, terminated, truncated, self._get_info()
 
-    def _execute_action(self, action: int, price: float):
+    def _execute_action(self, action: int, price: float) -> float:
+        trade_value = 0.0
+
         if action == 0:
-            self.capital += self.num_shares * price
+            trade_value = self.num_shares * price
+            self.capital += trade_value
             self.num_shares = 0.0
 
         elif action == 1:
             shares_to_sell = self.num_shares / 2.0
-            self.capital += shares_to_sell * price
+            trade_value = shares_to_sell * price
+            self.capital += trade_value
             self.num_shares -= shares_to_sell
 
         elif action == 2:
@@ -88,10 +111,14 @@ class StockTradingEnv(gym.Env):
             amount = self.capital / 2.0
             self.num_shares += amount / price
             self.capital -= amount
+            trade_value = amount
 
         elif action == 4:
+            trade_value = self.capital
             self.num_shares += self.capital / price
             self.capital = 0.0
+
+        return trade_value
 
     def render(self):
         price = self.stock_data[self.current_step]
