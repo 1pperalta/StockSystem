@@ -48,10 +48,10 @@ class DQNAgent:
         gamma: float = 0.99,
         epsilon_start: float = 1.0,
         epsilon_end: float = 0.05,
-        epsilon_decay: float = 0.995,
-        buffer_capacity: int = 10_000,
+        epsilon_decay: float = 0.9997,
+        buffer_capacity: int = 50_000,
         batch_size: int = 64,
-        target_update_freq: int = 100,
+        target_update_freq: int = 200,
     ):
         self.action_size = action_size
         self.gamma = gamma

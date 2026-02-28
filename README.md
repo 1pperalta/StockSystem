@@ -1,12 +1,12 @@
 # StockSystem
 
-Reinforcement Learning environment for stock trading. A DQN agent built manually with PyTorch learns to buy, sell, or hold AAPL stock to maximize portfolio profit over a training period of 500 episodes.
+Reinforcement Learning environment for stock and crypto trading. A DQN agent built manually with PyTorch learns to buy, sell, or hold assets to maximize portfolio profit. Trained and evaluated on 5 assets across different volatility profiles.
 
 ---
 
 # StockSystem (Espanol)
 
-Ambiente de aprendizaje por refuerzo para operar en el mercado de acciones. Un agente DQN construido manualmente con PyTorch aprende a comprar, vender o mantener acciones de AAPL para maximizar la ganancia del portafolio durante 500 episodios de entrenamiento.
+Ambiente de aprendizaje por refuerzo para operar en el mercado de acciones y criptomonedas. Un agente DQN construido manualmente con PyTorch aprende a comprar, vender o mantener activos para maximizar la ganancia del portafolio. Entrenado y evaluado en 5 activos con diferentes perfiles de volatilidad.
 
 ---
 
@@ -14,40 +14,41 @@ Ambiente de aprendizaje por refuerzo para operar en el mercado de acciones. Un a
 
 | Component | Description |
 |-----------|-------------|
-| State | 6 historical closing prices + invested value + available capital (8 floats) |
+| State | 5 daily percentage returns + invested ratio + cash ratio (7 floats) |
 | Actions | Sell all, Sell half, Hold, Buy half, Buy all (Discrete 5) |
 | Reward | Normalized change in total portfolio value per step |
-| Penalties | Transaction fee (0.1%), hold penalty when idle, terminal loss penalty |
+| Penalties | Transaction fee (0.1%), hold penalty (1% per step), terminal loss penalty |
+| Episode length | 60 trading days (training), 180 trading days (evaluation) |
+
+The observation uses percentage returns instead of raw prices so the agent learns scale-invariant patterns that transfer across assets with very different price magnitudes.
+
+El estado usa retornos porcentuales en lugar de precios absolutos, lo que permite al agente aprender patrones independientes de la escala que funcionan en activos con magnitudes de precio muy diferentes.
 
 ---
 
 ## Results / Resultados
 
-Trained for 500 episodes on real AAPL data (2020-2025, 1507 trading days). Evaluated on a 230-day window.
+Trained for 2000 episodes per asset (60-day windows). Evaluated on a 180-day window.
 
-| Strategy | Profit |
-|----------|--------|
-| DQN Agent | +$381,786.71 |
-| Buy and Hold | +$154,573.31 |
-| Agent advantage | +$227,213.40 |
+| Asset | Agent Profit | Buy-Hold Profit | Agent Advantage |
+|-------|-------------|-----------------|-----------------|
+| AAPL | +$399,819 | +$65,641 | +$334,178 |
+| BTC-USD | +$360,920 | +$150,039 | +$210,881 |
+| ETH-USD | +$360,738 | +$185,477 | +$175,261 |
+| SOL-USD | +$223,467 | -$14,564 | +$238,031 |
+| SCHD | +$64,263 | -$15,057 | +$79,320 |
 
-### Agent decisions / Decisiones del agente
+All agents beat buy-and-hold on their respective assets. / Todos los agentes superaron la estrategia de comprar y mantener en sus activos respectivos.
 
-| Action | Count |
-|--------|-------|
-| Sell all | 33 |
-| Sell half | 0 |
-| Hold | 80 |
-| Buy half | 115 |
-| Buy all | 2 |
+---
 
-### Evaluation chart / Grafico de evaluacion
+## Evaluation Charts / Graficos de Evaluacion
 
-![Agent Decisions on AAPL](images/Figure_1.png)
-
-### Terminal output / Salida en terminal
-
-![Evaluation results](images/image.png)
+![Agent Decisions on AAPL](images/evaluation_AAPL.png)
+![Agent Decisions on BTC](images/evaluation_BTC-USD.png)
+![Agent Decisions on ETH](images/evaluation_ETH-USD.png)
+![Agent Decisions on SOL](images/evaluation_SOL-USD.png)
+![Agent Decisions on SCHD](images/evaluation_SCHD.png)
 
 ---
 
@@ -56,13 +57,12 @@ Trained for 500 episodes on real AAPL data (2020-2025, 1507 trading days). Evalu
 ```
 stock_env.py                    - Custom Gymnasium environment
 agent.py                        - MLP network, replay buffer, DQN agent
-train.py                        - Training loop (500 episodes)
+train.py                        - Training loop (2000 episodes per asset)
 evaluate.py                     - Evaluation and chart generation
 download/download_stock_info.py - Downloads historical data from Yahoo Finance
 test/test.py                    - Environment test with random actions
 data/                           - Stock price CSV files
 images/                         - Result charts
-model.pth                       - Trained model weights
 ```
 
 ---
@@ -85,7 +85,7 @@ uv run python test/test.py
 # Train the agent / Entrenar el agente
 uv run python train.py
 
-# Evaluate and generate chart / Evaluar y generar grafico
+# Evaluate and generate charts / Evaluar y generar graficos
 uv run python evaluate.py
 ```
 

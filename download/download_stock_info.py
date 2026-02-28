@@ -28,8 +28,12 @@ def download_stock_data(
 
 
 if __name__ == "__main__":
-    download_stock_data(
-        ticker="AAPL",
-        start_date="2020-01-01",
-        end_date="2025-12-31",
-    )
+    tickers = ["AAPL", "BTC-USD", "ETH-USD", "SOL-USD", "SCHD"]
+
+    for ticker in tickers:
+        download_stock_data(
+            ticker=ticker,
+            start_date="2020-01-01",
+            end_date="2025-12-31",
+        )
+        print()

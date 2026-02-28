@@ -1,19 +1,20 @@
-import os
-import sys
 import pandas as pd
 import numpy as np
-import torch
 from stock_env import StockTradingEnv
 from agent import DQNAgent
 
-def load_stock_data(filepath):
-    df = pd.read_csv(filepath, header=[0, 1], index_col=0, parse_dates=True)
-    return df["Close"]["AAPL"].dropna().to_numpy()
+TICKERS = ["AAPL", "BTC-USD", "ETH-USD", "SOL-USD", "SCHD"]
 
-def train(episodes=500):
-    stock_data = load_stock_data("data/AAPL.csv")
+
+def load_stock_data(ticker: str) -> np.ndarray:
+    df = pd.read_csv(f"data/{ticker}.csv", header=[0, 1], index_col=0, parse_dates=True)
+    return df["Close"][ticker].dropna().to_numpy()
+
+
+def train(ticker: str, episodes: int = 2000):
+    stock_data = load_stock_data(ticker)
     env = StockTradingEnv(stock_data=stock_data)
-    agent = DQNAgent(state_size=8, action_size=5)
+    agent = DQNAgent(state_size=7, action_size=5)
 
     for episode in range(episodes):
         state, _ = env.reset()
@@ -33,14 +34,17 @@ def train(episodes=500):
                 break
 
         print(
-            f"Episode {episode + 1:>4d} | "
+            f"[{ticker}] Episode {episode + 1:>4d} | "
             f"Profit: {info['profit']:>+12.2f} | "
             f"Reward: {total_reward:>+12.2f} | "
             f"Epsilon: {agent.epsilon:.3f}"
         )
 
-    agent.save("model.pth")
-    print("Training complete. Model saved to model.pth")
+    model_path = f"model_{ticker}.pth"
+    agent.save(model_path)
+    print(f"Training complete. Model saved to {model_path}\n")
+
 
 if __name__ == "__main__":
-    train()
+    for ticker in TICKERS:
+        train(ticker)

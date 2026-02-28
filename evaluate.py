@@ -4,10 +4,12 @@ import matplotlib.pyplot as plt
 from stock_env import StockTradingEnv
 from agent import DQNAgent
 
+TICKERS = ["AAPL", "BTC-USD", "ETH-USD", "SOL-USD", "SCHD"]
 
-def load_stock_data(filepath: str) -> np.ndarray:
-    df = pd.read_csv(filepath, header=[0, 1], index_col=0, parse_dates=True)
-    return df["Close"]["AAPL"].dropna().to_numpy()
+
+def load_stock_data(ticker: str) -> np.ndarray:
+    df = pd.read_csv(f"data/{ticker}.csv", header=[0, 1], index_col=0, parse_dates=True)
+    return df["Close"][ticker].dropna().to_numpy()
 
 
 def buy_and_hold(stock_data: np.ndarray, start: int, end: int, initial_capital: float) -> np.ndarray:
@@ -15,12 +17,12 @@ def buy_and_hold(stock_data: np.ndarray, start: int, end: int, initial_capital: 
     return np.array([shares * stock_data[i] for i in range(start, end + 1)])
 
 
-def evaluate(model_path: str = "model.pth", seed: int = 0):
-    stock_data = load_stock_data("data/AAPL.csv")
+def evaluate(ticker: str, seed: int = 0):
+    stock_data = load_stock_data(ticker)
 
-    env = StockTradingEnv(stock_data=stock_data)
-    agent = DQNAgent(state_size=8, action_size=5)
-    agent.load(model_path)
+    env = StockTradingEnv(stock_data=stock_data, max_episode_steps=180)
+    agent = DQNAgent(state_size=7, action_size=5)
+    agent.load(f"model_{ticker}.pth")
     agent.epsilon = 0.0
 
     state, info = env.reset(seed=seed)
@@ -50,25 +52,26 @@ def evaluate(model_path: str = "model.pth", seed: int = 0):
     days = list(range(len(prices)))
     baseline = buy_and_hold(stock_data, start_step, end_step, env.initial_capital)
 
-    print(f"Steps traded:      {len(actions_taken)}")
-    print(f"Final profit:      {info['profit']:>+.2f}")
-    print(f"Buy-hold profit:   {baseline[-1] - env.initial_capital:>+.2f}")
+    print(f"[{ticker}] Steps traded:    {len(actions_taken)}")
+    print(f"[{ticker}] Final profit:    {info['profit']:>+.2f}")
+    print(f"[{ticker}] Buy-hold profit: {baseline[-1] - env.initial_capital:>+.2f}")
     print()
     for name in action_names:
         count = sum(1 for a in actions_taken if action_names[a] == name)
         print(f"  {name:<30} {count} times")
+    print()
 
     buy_days = [i for i, a in enumerate(actions_taken) if a == 4]
     sell_days = [i for i, a in enumerate(actions_taken) if a == 0]
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
 
-    ax1.plot(days, prices, color="steelblue", linewidth=1.2, label="AAPL price")
+    ax1.plot(days, prices, color="steelblue", linewidth=1.2, label=f"{ticker} price")
     ax1.scatter(buy_days, [prices[d] for d in buy_days], marker="^", color="green", zorder=5, label="Buy all")
     ax1.scatter(sell_days, [prices[d] for d in sell_days], marker="v", color="red", zorder=5, label="Sell all")
     ax1.set_ylabel("Price (USD)")
     ax1.legend()
-    ax1.set_title("Agent Decisions on AAPL")
+    ax1.set_title(f"Agent Decisions on {ticker}")
 
     ax2.plot(days, portfolio_values, color="darkorange", linewidth=1.2, label="Agent portfolio")
     ax2.plot(days, baseline, color="gray", linewidth=1.0, linestyle="--", label="Buy and hold")
@@ -78,10 +81,12 @@ def evaluate(model_path: str = "model.pth", seed: int = 0):
     ax2.legend()
 
     plt.tight_layout()
-    plt.savefig("evaluation.png", dpi=150)
+    chart_path = f"images/evaluation_{ticker}.png"
+    plt.savefig(chart_path, dpi=150)
     plt.show()
-    print("Chart saved to evaluation.png")
+    print(f"Chart saved to {chart_path}\n")
 
 
 if __name__ == "__main__":
-    evaluate()
+    for ticker in TICKERS:
+        evaluate(ticker)

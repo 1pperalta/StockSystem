@@ -14,8 +14,9 @@ class StockTradingEnv(gym.Env):
         stock_data: np.ndarray,
         initial_capital: float = 1_000_000.0,
         window_size: int = 6,
+        max_episode_steps: int = 60,
         transaction_fee_rate: float = 0.001,
-        hold_penalty: float = 0.001,
+        hold_penalty: float = 0.015,
         loss_threshold: float = 0.9,
         render_mode: Optional[str] = None,
     ):
@@ -24,6 +25,7 @@ class StockTradingEnv(gym.Env):
         self.stock_data = stock_data
         self.initial_capital = initial_capital
         self.window_size = window_size
+        self.max_episode_steps = max_episode_steps
         self.transaction_fee_rate = transaction_fee_rate
         self.hold_penalty = hold_penalty
         self.loss_threshold = loss_threshold
@@ -32,9 +34,9 @@ class StockTradingEnv(gym.Env):
         self.action_space = spaces.Discrete(5)
 
         self.observation_space = spaces.Box(
-            low=0.0,
+            low=-np.inf,
             high=np.inf,
-            shape=(self.window_size + 2,),
+            shape=(self.window_size + 1,),
             dtype=np.float64,
         )
 
@@ -49,6 +51,7 @@ class StockTradingEnv(gym.Env):
         max_start = len(self.stock_data) - self.window_size - 1
         self.current_step = self.np_random.integers(self.window_size - 1, max_start)
 
+        self.episode_start = self.current_step
         self.capital = self.initial_capital
         self.num_shares = 0.0
         self.previous_total_value = self.initial_capital
@@ -73,10 +76,13 @@ class StockTradingEnv(gym.Env):
         reward = (total_value - self.previous_total_value) / self.initial_capital
 
     
-        if action == 2 and self.num_shares == 0.0:
+        if action == 2:
             reward -= self.hold_penalty
 
-        terminated = self.current_step >= len(self.stock_data) - 1
+        terminated = (
+            self.current_step >= len(self.stock_data) - 1
+            or self.current_step >= self.episode_start + self.max_episode_steps
+        )
 
         
         if terminated and total_value < self.loss_threshold * self.initial_capital:
@@ -140,11 +146,13 @@ class StockTradingEnv(gym.Env):
         start = self.current_step - self.window_size + 1
         end = self.current_step + 1
         prices = self.stock_data[start:end]
+        returns = np.diff(prices) / prices[:-1]
 
-        invested_value = self.num_shares * self.stock_data[self.current_step]
+        invested_ratio = (self.num_shares * self.stock_data[self.current_step]) / self.initial_capital
+        cash_ratio = self.capital / self.initial_capital
 
         return np.array(
-            [*prices, invested_value, self.capital],
+            [*returns, invested_ratio, cash_ratio],
             dtype=np.float64,
         )
 
