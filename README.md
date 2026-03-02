@@ -26,6 +26,52 @@ El estado usa retornos porcentuales en lugar de precios absolutos, lo que permit
 
 ---
 
+## Reward Function / Funcion de Recompensa
+
+The reward is computed at every step and has three components:
+
+**1. Mark-to-market return (every step)**
+
+```
+R = (total_value_t - total_value_t-1) / initial_capital
+```
+
+The total portfolio value is `shares * new_price + available_capital`. Dividing by `initial_capital` normalizes the reward so that a $10,000 gain on a $1,000,000 portfolio gives `+0.01` regardless of the asset's price level. This is the main learning signal — the agent is rewarded for growing the portfolio and penalized when it shrinks.
+
+**2. Hold penalty (every step the agent holds)**
+
+```
+R -= 0.01  (if action == Hold)
+```
+
+Applied every time the agent chooses Hold (action 2), regardless of whether it has shares or not. This forces the agent to actively manage its position rather than staying passive. Without this penalty the agent learns that doing nothing is always safe.
+
+**3. Terminal loss penalty (only at episode end)**
+
+```
+R -= (1 - total_value / initial_capital)  if total_value < 90% of initial_capital
+```
+
+Applied only at the last step of the episode if the agent lost more than 10% of the starting capital. The penalty scales with the size of the loss — a 20% loss hurts more than an 11% loss. This discourages the agent from taking excessive risks that lead to large drawdowns.
+
+---
+
+La recompensa se calcula en cada paso y tiene tres componentes:
+
+**1. Retorno mark-to-market (cada paso)**
+
+El agente recibe una recompensa positiva si el valor total del portafolio subio y negativa si bajo. Se normaliza dividiendo por el capital inicial para que sea independiente de la magnitud del activo.
+
+**2. Penalizacion por inaccion (cada paso que el agente no actua)**
+
+Se aplica `-0.01` cada vez que el agente elige Hold. Esto evita que el agente aprenda a no hacer nada como estrategia segura.
+
+**3. Penalizacion terminal por perdida grande (solo al final del episodio)**
+
+Si al terminar el episodio el portafolio vale menos del 90% del capital inicial, se aplica una penalizacion proporcional al tamano de la perdida.
+
+---
+
 ## Results / Resultados
 
 Trained for 2000 episodes per asset (60-day windows). Evaluated on a 180-day window.
