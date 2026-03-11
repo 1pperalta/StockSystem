@@ -17,6 +17,31 @@ def buy_and_hold(stock_data: np.ndarray, start: int, end: int, initial_capital: 
     return np.array([shares * stock_data[i] for i in range(start, end + 1)])
 
 
+def profit_factor(portfolio_values: list) -> float:
+    daily_returns = np.diff(portfolio_values)
+    gains = daily_returns[daily_returns > 0].sum()
+    losses = abs(daily_returns[daily_returns < 0].sum())
+    if losses == 0:
+        return float("inf")
+    return gains / losses
+
+
+def max_drawdown(portfolio_values: list) -> float:
+    values = np.array(portfolio_values)
+    peak = np.maximum.accumulate(values)
+    drawdowns = (peak - values) / peak
+    return drawdowns.max()
+
+
+def sharpe_ratio(portfolio_values: list, periods_per_year: int = 252) -> float:
+    daily_returns = np.diff(portfolio_values) / portfolio_values[:-1]
+    mean = np.mean(daily_returns)
+    std = np.std(daily_returns)
+    if std == 0:
+        return 0.0
+    return (mean / std) * np.sqrt(periods_per_year)
+
+
 def evaluate(ticker: str, seed: int = 0):
     stock_data = load_stock_data(ticker)
 
@@ -52,9 +77,16 @@ def evaluate(ticker: str, seed: int = 0):
     days = list(range(len(prices)))
     baseline = buy_and_hold(stock_data, start_step, end_step, env.initial_capital)
 
+    pf = profit_factor(portfolio_values)
+    mdd = max_drawdown(portfolio_values)
+    sr = sharpe_ratio(portfolio_values)
+
     print(f"[{ticker}] Steps traded:    {len(actions_taken)}")
     print(f"[{ticker}] Final profit:    {info['profit']:>+.2f}")
     print(f"[{ticker}] Buy-hold profit: {baseline[-1] - env.initial_capital:>+.2f}")
+    print(f"[{ticker}] Profit Factor:   {pf:.2f}")
+    print(f"[{ticker}] Max Drawdown:    {mdd * 100:.2f}%")
+    print(f"[{ticker}] Sharpe Ratio:    {sr:.2f}")
     print()
     for name in action_names:
         count = sum(1 for a in actions_taken if action_names[a] == name)
