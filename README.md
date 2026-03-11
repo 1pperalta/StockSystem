@@ -76,15 +76,17 @@ Si al terminar el episodio el portafolio vale menos del 90% del capital inicial,
 
 Trained for 2000 episodes per asset (60-day windows). Evaluated on a 180-day window.
 
-| Asset | Agent Profit | Buy-Hold Profit | Agent Advantage |
-|-------|-------------|-----------------|-----------------|
-| AAPL | +$399,819 | +$65,641 | +$334,178 |
-| BTC-USD | +$360,920 | +$150,039 | +$210,881 |
-| ETH-USD | +$360,738 | +$185,477 | +$175,261 |
-| SOL-USD | +$223,467 | -$14,564 | +$238,031 |
-| SCHD | +$64,263 | -$15,057 | +$79,320 |
+| Asset | Agent Profit | Buy-Hold Profit | Agent Advantage | Profit Factor | Max Drawdown | Sharpe Ratio |
+|-------|-------------|-----------------|-----------------|---------------|--------------|--------------|
+| AAPL | +$399,819 | +$65,641 | +$334,178 | 1.38 | 16.76% | 1.59 |
+| BTC-USD | +$360,920 | +$150,039 | +$210,881 | 1.31 | 15.62% | 1.48 |
+| ETH-USD | +$360,738 | +$185,477 | +$175,261 | 1.20 | 51.42% | 0.98 |
+| SOL-USD | +$223,467 | -$14,564 | +$238,031 | 1.25 | 28.60% | 0.91 |
+| SCHD | +$64,263 | -$15,057 | +$79,320 | 1.11 | 5.59% | 0.63 |
 
-All agents beat buy-and-hold on their respective assets. / Todos los agentes superaron la estrategia de comprar y mantener en sus activos respectivos.
+All agents beat buy-and-hold on their respective assets. AAPL and BTC show the best risk-adjusted performance (Sharpe > 1.4, Drawdown < 17%). ETH achieved high profit but with a significant 51% drawdown during the evaluation period. SCHD shows the most conservative behavior with the lowest drawdown (5.59%), reflecting the defensive nature of the dividend ETF.
+
+Todos los agentes superaron la estrategia de comprar y mantener en sus activos respectivos. AAPL y BTC presentan el mejor desempeno ajustado por riesgo (Sharpe > 1.4, Drawdown < 17%). ETH logro alta ganancia pero con una caida maxima del 51% durante el periodo de evaluacion. SCHD muestra el comportamiento mas conservador con la menor caida maxima (5.59%), reflejando la naturaleza defensiva del ETF de dividendos.
 
 ---
 
